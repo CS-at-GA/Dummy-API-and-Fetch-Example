@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 import { Card, Button, Avatar, Badge } from 'react-native-paper';
 
 const dummyAPI = {
-  "app-id":"",
+  "app-id":"", // your app-id here. 
   "baseURL":"https://dummyapi.io/data/v1/"
 }
 
