@@ -9,7 +9,6 @@ const dummyAPI = {
   "app-id":"", // your app-id here. 
   "baseURL":"https://dummyapi.io/data/v1/"
 }
-
 export default function App() {
   const [self,setSelf] = React.useState();
   const [posts,setPosts] = React.useState([]);
@@ -72,6 +71,30 @@ export default function App() {
     setAddingComment(true);
   }
 
+  const submitComment = () => {
+    if( commentText !== "" && self.id && activePostID ) {
+      const newComment = {
+        message: commentText,
+        owner: self.id,
+        post: activePostID
+      }
+      fetch( dummyAPI.baseURL + "comment/create", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',        
+          "app-id": dummyAPI["app-id"]
+        },
+        body: JSON.stringify(newComment),      
+      })
+      .then( () => {
+        getPostComments(activePostID)
+        setCommentText("")
+        setAddingComment(false)
+      })
+      .catch( (e) => { console.log(e) })
+    }      
+  }
+
   const setSelfAsRandomUser = () => {
     fetch( dummyAPI.baseURL + "user", {
       method: "GET",
@@ -116,7 +139,7 @@ export default function App() {
               value={commentText}
               onChangeText={setCommentText}
             />
-            <Button>Submit Comment</Button>
+            <Button onPress={submitComment}>Submit Comment</Button>
           </View>
           :
           <></>
