@@ -3,7 +3,7 @@ import { Text, View, StyleSheet, FlatList } from 'react-native';
 import Constants from 'expo-constants';
 
 // or any pure javascript modules available in npm
-import { Card, Button, Avatar, Badge, Snackbar } from 'react-native-paper';
+import { TextInput, Card, Button, Avatar, Badge, Snackbar } from 'react-native-paper';
 
 const dummyAPI = {
   "app-id":"", // your app-id here. 
@@ -11,10 +11,13 @@ const dummyAPI = {
 }
 
 export default function App() {
+  const [self,setSelf] = React.useState();
   const [posts,setPosts] = React.useState([]);
   const [snackbarText, setSnackbarText] = React.useState("");
   const [comments,setComments] = React.useState([]);
   const [activePostID,setActivePostID] = React.useState();
+  const [addingComment,setAddingComment] = React.useState(false);
+  const [commentText,setCommentText] = React.useState("");
 
   const likePost = (post) => {
     const i = posts.findIndex( p => p.id = post.id );
@@ -34,7 +37,6 @@ export default function App() {
   }
 
   const getAllPosts = () => {
-    setSnackbarText("retrieving posts");
     fetch( dummyAPI.baseURL + "post", {
       method: "GET",
       headers: {
@@ -49,7 +51,6 @@ export default function App() {
   const getPostComments = (id) => {
     setActivePostID(id);
     setComments([]);
-    setSnackbarText("retrieving comments");
     fetch( dummyAPI.baseURL + "post/" + id + "/comment", {
       method: "GET",
       headers: {
@@ -66,8 +67,27 @@ export default function App() {
     setComments([]);
   }
 
+  const addComment = (id) => {
+    getPostComments(id);
+    setAddingComment(true);
+  }
+
+  const setSelfAsRandomUser = () => {
+    fetch( dummyAPI.baseURL + "user", {
+      method: "GET",
+      headers: {
+        "app-id": dummyAPI["app-id"]
+      }
+    })
+    .then( response => response.json() )
+    .then( json => json.data )
+    .then( users =>setSelf( users[Math.floor(Math.random() * users.length)]))
+    .catch( e => setSnackbarText(e) )    
+  }
+
   React.useEffect(() => {
     getAllPosts();
+    setSelfAsRandomUser();
   },[])
   
   const renderPost = ({ item }) => (
@@ -90,6 +110,17 @@ export default function App() {
           :
           <></>
         }
+        { item.id === activePostID && addingComment ?
+          <View>
+            <TextInput 
+              value={commentText}
+              onChangeText={setCommentText}
+            />
+            <Button>Submit Comment</Button>
+          </View>
+          :
+          <></>
+        }        
       </Card.Content>
       <Card.Actions>
         {item.likes > 0 ? <Badge size={36} onPress={()=>likePost(item)}>{item.likes}</Badge> : <Button onPress={()=>likePost(item)}>Like</Button>}
@@ -98,12 +129,13 @@ export default function App() {
           :
           <Button onPress={()=>getPostComments(item.id)}>See Comments</Button>
         }
+        <Button onPress={()=>addComment(item.id)}>Add Comment</Button>
       </Card.Actions>
     </Card>
   );
 
   const renderComment = ({item}) => (
-    <Text>{item.message}</Text>
+    <Text>{item.owner.firstName} says: {item.message}</Text>
   )
 
   return (
@@ -112,6 +144,7 @@ export default function App() {
         data={posts}
         renderItem={renderPost}
         keyExtractor={item => item.id}
+        ListHeaderComponent={<Text>{self?.firstName}</Text>}
       />
     </View>
   );
