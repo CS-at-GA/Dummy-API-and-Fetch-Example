@@ -3,7 +3,7 @@ import { Text, View, StyleSheet, FlatList } from 'react-native';
 import Constants from 'expo-constants';
 
 // or any pure javascript modules available in npm
-import { Card, Button, Avatar, Badge } from 'react-native-paper';
+import { Card, Button, Avatar, Badge, Snackbar } from 'react-native-paper';
 
 const dummyAPI = {
   "app-id":"", // your app-id here. 
@@ -11,8 +11,10 @@ const dummyAPI = {
 }
 
 export default function App() {
-  const [posts,setPosts] = React.useState([])
+  const [posts,setPosts] = React.useState([]);
   const [snackbarText, setSnackbarText] = React.useState("");
+  const [comments,setComments] = React.useState([]);
+  const [activePostID,setActivePostID] = React.useState();
 
   const likePost = (post) => {
     const i = posts.findIndex( p => p.id = post.id );
@@ -44,6 +46,26 @@ export default function App() {
     .catch( e => setSnackbarText(e) )
   }
 
+  const getPostComments = (id) => {
+    setActivePostID(id);
+    setComments([]);
+    setSnackbarText("retrieving comments");
+    fetch( dummyAPI.baseURL + "post/" + id + "/comment", {
+      method: "GET",
+      headers: {
+        "app-id": dummyAPI["app-id"]
+      }
+    })
+    .then( response => response.json() )
+    .then( json => setComments( json.data ) )
+    .catch( e => setSnackbarText(e) )    
+  }
+
+  const clearComments = () => {
+    setActivePostID(undefined);
+    setComments([]);
+  }
+
   React.useEffect(() => {
     getAllPosts();
   },[])
@@ -59,13 +81,30 @@ export default function App() {
 
       <Card.Content>
         <Text>{item.text}</Text>
+        {item.id === activePostID ? 
+          <FlatList
+            data={comments}
+            renderItem={renderComment}
+            keyExtractor={item => item.id}
+          />
+          :
+          <></>
+        }
       </Card.Content>
       <Card.Actions>
         {item.likes > 0 ? <Badge size={36} onPress={()=>likePost(item)}>{item.likes}</Badge> : <Button onPress={()=>likePost(item)}>Like</Button>}
-        <Button>See Comments</Button>
+        {item.id === activePostID ?
+          <Button onPress={clearComments}>Hide Comments</Button>
+          :
+          <Button onPress={()=>getPostComments(item.id)}>See Comments</Button>
+        }
       </Card.Actions>
     </Card>
   );
+
+  const renderComment = ({item}) => (
+    <Text>{item.message}</Text>
+  )
 
   return (
     <View style={styles.container}>
